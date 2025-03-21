@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title data-i18n="appName">ヘルシーライフ+</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        .feature-card {
+            transition: transform 0.2s ease;
+        }
+        
+        .feature-card:active {
+            transform: scale(0.98);
+        }
+        
+        .step-card {
+            position: relative;
+        }
+        
+        .step-card::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -20px;
+            width: 2px;
+            height: 20px;
+            background-color: #4CAF50;
+        }
+        
+        .step-card:last-child::after {
+            display: none;
+        }
+
+        /* 添加页面切换动画 */
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #4CAF50;
+            border-radius: 2px;
+        }
+
+        /* 底部导航栏样式优化 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            padding: 0.5rem 0;
+        }
+
+        .tab-item {
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #9CA3AF;
+        }
+
+        .tab-item.active {
+            color: #4CAF50;
+        }
+
+        .tab-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -0.5rem;
+            width: 4px;
+            height: 4px;
+            background-color: #4CAF50;
+            border-radius: 50%;
+        }
+
+        .tab-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 4px;
+            position: relative;
+        }
+
+        .tab-item.active .tab-icon {
+            transform: translateY(-2px);
+        }
+
+        /* 主内容区域添加底部padding */
+        .main-content {
+            padding-bottom: 4rem;
+            min-height: calc(100vh - 4rem);
+        }
+
+        /* 语言切换器样式优化 */
+        .lang-switcher {
+            background: white;
+            overflow: hidden;
+        }
+        
+        .lang-option {
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .lang-option:last-child {
+            border-bottom: none;
+        }
+        
+        .lang-option:active {
+            background: #f9fafb;
+        }
+        
+        .lang-option.active {
+            color: #4CAF50;
+            font-weight: 500;
+        }
+
+        .lang-option.active::after {
+            content: '✓';
+            color: #4CAF50;
+        }
+
+        /* 模态框样式 */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 320px;
+            transform: translateY(20px);
+            animation: slideUp 0.3s ease forwards;
+        }
+
+        @keyframes slideUp {
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .close-button {
+            padding: 0.5rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .close-button:hover {
+            background: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 状态栏 -->
+    <div class="bg-green-600 h-6"></div>
+
+    <div class="main-content">
+        <!-- 首页 -->
+        <div id="home" class="page active">
+            <!-- 头部区域 -->
+            <header class="bg-gradient-to-r from-green-500 to-green-600 text-white py-8">
+                <div class="container mx-auto px-4 text-center">
+                    <h1 class="text-3xl font-bold mb-2" data-i18n="appName">ヘルシーライフ+</h1>
+                    <p class="text-base" data-i18n="subtitle">あなたの健康的な食生活アシスタント</p>
+                </div>
+            </header>
+
+            <section class="container mx-auto px-4 py-8">
+                <!-- 今日概览 -->
+                <div class="bg-white rounded-lg p-4 mb-6 shadow-sm">
+                    <h3 class="text-lg font-semibold mb-3" data-i18n="todayOverview">今日の概要</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-500">1200</div>
+                            <div class="text-xs text-gray-500"><span data-i18n="caloriesIntake">摂取カロリー</span>(<span data-i18n="kcal">kcal</span>)</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-500">1800</div>
+                            <div class="text-xs text-gray-500"><span data-i18n="caloriesGoal">目標カロリー</span>(<span data-i18n="kcal">kcal</span>)</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-500">600</div>
+                            <div class="text-xs text-gray-500"><span data-i18n="caloriesLeft">残りカロリー</span>(<span data-i18n="kcal">kcal</span>)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 饮食计划 -->
+                <h3 class="text-lg font-semibold mb-4" data-i18n="mealPlan">今日の食事プラン</h3>
+                <div class="space-y-4">
+                    <div class="border rounded-lg p-4 bg-white">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold">朝食 🌅</h4>
+                            <span class="text-xs text-gray-500">07:30</span>
+                        </div>
+                        <ul class="text-sm text-gray-600 space-y-2">
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                全谷物パン
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                卵
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                牛乳
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                フルーツ
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="border rounded-lg p-4 bg-white">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold">昼食 🌞</h4>
+                            <span class="text-xs text-gray-500">12:00</span>
+                        </div>
+                        <ul class="text-sm text-gray-600 space-y-2">
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                玄米
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                鶏胸肉
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                季節の野菜
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                スープ
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="border rounded-lg p-4 bg-white">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold">夕食 🌙</h4>
+                            <span class="text-xs text-gray-500">18:30</span>
+                        </div>
+                        <ul class="text-sm text-gray-600 space-y-2">
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                全粒小麦の麺
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                魚
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                サラダ
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                フルーツ
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 统计页面 -->
+        <div id="stats" class="page">
+            <header class="bg-white py-4 px-4 shadow-sm">
+                <h2 class="text-xl font-bold">データ分析</h2>
+            </header>
+
+            <section class="container mx-auto px-4 py-6">
+                <div class="space-y-4">
+                    <div class="bg-white rounded-lg p-4">
+                        <h4 class="font-semibold mb-3">体重変化傾向</h4>
+                        <div class="bg-gray-50 h-40 rounded flex items-center justify-center text-sm text-gray-500">
+                            [体重変化グラフ]
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4">
+                        <h4 class="font-semibold mb-3">栄養摂取分析</h4>
+                        <div class="bg-gray-50 h-40 rounded flex items-center justify-center text-sm text-gray-500">
+                            [栄養分析グラフ]
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4">
+                        <h4 class="font-semibold mb-3">今月の達成率</h4>
+                        <div class="flex items-center justify-between">
+                            <div class="text-3xl font-bold text-green-500">85%</div>
+                            <div class="text-sm text-gray-500">前月比 +5%</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 记录页面 -->
+        <div id="record" class="page">
+            <header class="bg-white py-4 px-4 shadow-sm">
+                <h2 class="text-xl font-bold">カレンダー</h2>
+            </header>
+
+            <section class="container mx-auto px-4 py-6">
+                <!-- 打卡日历 -->
+                <div class="bg-white rounded-lg p-4 mb-6">
+                    <h4 class="font-semibold mb-3">今週のカレンダー</h4>
+                    <div class="grid grid-cols-7 gap-2">
+                        <div class="aspect-square bg-green-100 rounded flex flex-col items-center justify-center">
+                            <span class="text-xs text-gray-600">月</span>
+                            <span class="text-green-500 text-lg mt-1">✓</span>
+                        </div>
+                        <div class="aspect-square bg-green-100 rounded flex flex-col items-center justify-center">
+                            <span class="text-xs text-gray-600">火</span>
+                            <span class="text-green-500 text-lg mt-1">✓</span>
+                        </div>
+                        <div class="aspect-square bg-green-100 rounded flex flex-col items-center justify-center">
+                            <span class="text-xs text-gray-600">水</span>
+                            <span class="text-green-500 text-lg mt-1">✓</span>
+                        </div>
+                        <div class="aspect-square bg-green-500 rounded flex flex-col items-center justify-center text-white">
+                            <span class="text-xs">木</span>
+                            <span class="text-lg mt-1">✓</span>
+                        </div>
+                        <div class="aspect-square bg-gray-100 rounded flex flex-col items-center justify-center">
+                            <span class="text-xs text-gray-600">金</span>
+                        </div>
+                        <div class="aspect-square bg-gray-100 rounded flex flex-col items-center justify-center">
+                            <span class="text-xs text-gray-600">土</span>
+                        </div>
+                        <div class="aspect-square bg-gray-100 rounded flex flex-col items-center justify-center">
+                            <span class="text-xs text-gray-600">日</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 成就系统 -->
+                <div class="grid grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <div class="bg-yellow-100 rounded-full p-3 mb-1 flex items-center justify-center">
+                            <span class="text-2xl">🏆</span>
+                        </div>
+                        <p class="text-xs">継続カレンダー</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="bg-yellow-100 rounded-full p-3 mb-1 flex items-center justify-center">
+                            <span class="text-2xl">⭐</span>
+                        </div>
+                        <p class="text-xs">目標達成</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="bg-yellow-100 rounded-full p-3 mb-1 flex items-center justify-center">
+                            <span class="text-2xl">🎯</span>
+                        </div>
+                        <p class="text-xs">計画完了</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="bg-yellow-100 rounded-full p-3 mb-1 flex items-center justify-center">
+                            <span class="text-2xl">📈</span>
+                        </div>
+                        <p class="text-xs">継続進歩</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 我的页面 -->
+        <div id="profile" class="page">
+            <header class="bg-white py-4 px-4 shadow-sm">
+                <h2 class="text-xl font-bold">プロフィール</h2>
+            </header>
+
+            <section class="container mx-auto px-4 py-6">
+                <!-- 用户信息 -->
+                <div class="bg-white rounded-lg p-4 mb-6">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 bg-gray-200 rounded-full"></div>
+                        <div>
+                            <h3 class="font-semibold">ユーザー名</h3>
+                            <p class="text-sm text-gray-500">目標：減量 5kg</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 设置列表 -->
+                <div class="bg-white rounded-lg mb-6">
+                    <div class="p-4 border-b">
+                        <div class="flex items-center justify-between">
+                            <span>個人情報設定</span>
+                            <span class="text-gray-400">></span>
+                        </div>
+                    </div>
+                    <div class="p-4 border-b">
+                        <div class="flex items-center justify-between">
+                            <span>食生活好み設定</span>
+                            <span class="text-gray-400">></span>
+                        </div>
+                    </div>
+                    <div class="p-4 border-b">
+                        <div class="flex items-center justify-between">
+                            <span>目標設定</span>
+                            <span class="text-gray-400">></span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <span>システム設定</span>
+                            <span class="text-gray-400">></span>
+                        </div>
+                    </div>
+                    <div class="p-4 border-b">
+                        <div class="flex items-center justify-between" id="openLangModal">
+                            <span>言語設定 / Language / 语言设置</span>
+                            <span class="text-gray-400">></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <nav class="bottom-nav">
+        <div class="grid grid-cols-4 gap-2">
+            <a href="#" class="tab-item active text-center" data-page="home">
+                <div class="tab-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                </div>
+                <span class="text-xs" data-i18n="home">ホーム</span>
+            </a>
+            <a href="#" class="tab-item text-center" data-page="stats">
+                <div class="tab-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
+                <span class="text-xs" data-i18n="stats">統計</span>
+            </a>
+            <a href="#" class="tab-item text-center" data-page="record">
+                <div class="tab-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                </div>
+                <span class="text-xs" data-i18n="record">記録</span>
+            </a>
+            <a href="#" class="tab-item text-center" data-page="profile">
+                <div class="tab-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                <span class="text-xs" data-i18n="profile">プロフィール</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- 浮动打卡按钮 -->
+    <button class="fixed right-4 bottom-20 bg-green-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl">
+        ✓
+    </button>
+
+    <!-- 语言选择模态框 -->
+    <div class="modal-backdrop" id="langModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="font-semibold">言語設定 / Language / 语言设置</h3>
+                <button class="close-button" id="closeLangModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="lang-switcher">
+                <div class="lang-option active" data-lang="ja">日本語</div>
+                <div class="lang-option" data-lang="zh">中文</div>
+                <div class="lang-option" data-lang="en">English</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入语言配置文件 -->
+    <script src="js/i18n.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.tab-item');
+            const pages = document.querySelectorAll('.page');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetPage = tab.dataset.page;
+
+                    // 更新标签状态
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // 更新页面显示
+                    pages.forEach(page => {
+                        if (page.id === targetPage) {
+                            page.classList.add('active');
+                        } else {
+                            page.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            // 语言模态框控制
+            const langModal = document.getElementById('langModal');
+            const openLangModal = document.getElementById('openLangModal');
+            const closeLangModal = document.getElementById('closeLangModal');
+            const modalContent = langModal.querySelector('.modal-content');
+            const langOptions = document.querySelectorAll('.lang-option');
+            let currentLang = localStorage.getItem('selectedLanguage') || 'ja'; // 从本地存储获取语言设置，默认日语
+
+            function openModal() {
+                langModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                // 更新模态框中的语言选择状态
+                langOptions.forEach(opt => {
+                    opt.classList.toggle('active', opt.dataset.lang === currentLang);
+                });
+            }
+
+            function closeModal() {
+                langModal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            // 更新页面文本
+            function updatePageLanguage(lang) {
+                const elements = document.querySelectorAll('[data-i18n]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (translations[lang] && translations[lang][key]) {
+                        el.textContent = translations[lang][key];
+                    }
+                });
+                document.documentElement.lang = lang;
+                localStorage.setItem('selectedLanguage', lang); // 保存语言选择到本地存储
+                currentLang = lang;
+            }
+
+            // 初始化页面语言
+            updatePageLanguage(currentLang);
+
+            openLangModal.addEventListener('click', openModal);
+            closeLangModal.addEventListener('click', closeModal);
+
+            // 点击模态框外部关闭
+            langModal.addEventListener('click', (e) => {
+                if (e.target === langModal) {
+                    closeModal();
+                }
+            });
+
+            // 语言切换事件监听
+            langOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    const lang = option.dataset.lang;
+                    if (lang !== currentLang) {
+                        // 更新语言选择器状态
+                        langOptions.forEach(opt => opt.classList.remove('active'));
+                        option.classList.add('active');
+                        // 更新页面文本
+                        updatePageLanguage(lang);
+                        // 关闭模态框
+                        closeModal();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html> 
